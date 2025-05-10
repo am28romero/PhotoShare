@@ -22,10 +22,7 @@ jobs:
     # 3. Restore + Publish
     - name: Publish
       run: |
-        dotnet publish PhotoShare \
-          -c Release \
-          -o publish \
-          /p:RestoreLockedMode=true
+        dotnet publish PhotoShare -c Release -o publish /p:RestoreLockedMode=true
 
     # 4. Compress artefact
     - name: Compress to tarball
