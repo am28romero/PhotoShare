@@ -58,8 +58,6 @@ var app = builder.Build();
 
 app.UseRouting();
 
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -73,11 +71,14 @@ else
     app.UseHsts();
 }
 
+
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
 
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

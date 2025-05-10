@@ -1,10 +1,12 @@
-﻿@using PhotoShare.Components.Layout
-<Router AppAssembly="@typeof(PhotoShare.Components.Pages.Home).Assembly">
+﻿@using PhotoShare.Components.Account.Shared
+@using PhotoShare.Components.Layout
+@using PhotoShare.Components.Pages
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(PhotoShare.Components.Layout.MainLayout)" />
     </Found>
     <NotFound>
-        <LayoutView Layout="@typeof(MainLayout)">
+        <LayoutView Layout="@typeof(PhotoShare.Components.Layout.MainLayout)">
             <p>Sorry, page not found.</p>
         </LayoutView>
     </NotFound>
