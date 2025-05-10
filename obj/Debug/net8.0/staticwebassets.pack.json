@@ -1,0 +1,41 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Projects\\dotnet\\PhotoShare\\obj\\Debug\\net8.0\\scopedcss\\projectbundle\\PhotoShare.bundle.scp.css",
+      "PackagePath": "staticwebassets\\PhotoShare.bundle.scp.css"
+    },
+    {
+      "Id": "C:\\Projects\\dotnet\\PhotoShare\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Projects\\dotnet\\PhotoShare\\wwwroot\\bootstrap\\bootstrap.min.css",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css"
+    },
+    {
+      "Id": "C:\\Projects\\dotnet\\PhotoShare\\wwwroot\\bootstrap\\bootstrap.min.css.map",
+      "PackagePath": "staticwebassets\\bootstrap\\bootstrap.min.css.map"
+    },
+    {
+      "Id": "C:\\Projects\\dotnet\\PhotoShare\\wwwroot\\favicon.png",
+      "PackagePath": "staticwebassets\\favicon.png"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.PhotoShare.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.PhotoShare.props",
+      "PackagePath": "build\\PhotoShare.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.PhotoShare.props",
+      "PackagePath": "buildMultiTargeting\\PhotoShare.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.PhotoShare.props",
+      "PackagePath": "buildTransitive\\PhotoShare.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
