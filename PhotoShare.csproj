@@ -20,4 +20,10 @@
     <Content Remove="appsettings.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="publish\web.config" />
+    <_ContentIncludedByDefault Remove="publish\PhotoShare.deps.json" />
+    <_ContentIncludedByDefault Remove="publish\PhotoShare.runtimeconfig.json" />
+  </ItemGroup>
+
 </Project>
