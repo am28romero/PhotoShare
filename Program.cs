@@ -52,8 +52,6 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 var app = builder.Build();
 
-// app.UseRouting();
-// app.UseAuthentication();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -73,10 +71,15 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 
 // app.MapBlazorHub();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+app.UseRouting();
+app.UseAuthentication();
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+app.MapRazorPages();
 
 app.Run();
