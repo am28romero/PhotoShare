@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PhotoShare.Components;
 using PhotoShare.Components.Account;
 using PhotoShare.Data;
+using PhotoShare.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,10 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+builder.Services.AddScoped<FolderService>();
+builder.Services.AddScoped<MediaService>();
+builder.Services.AddHttpContextAccessor();
+
 
 builder.Services.AddAuthentication(options =>
     {
