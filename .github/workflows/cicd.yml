@@ -22,7 +22,8 @@ jobs:
     # 3. Restore + Publish
     - name: Publish
       run: |
-        dotnet publish PhotoShare.csproj -c Release -o publish /p:RestoreLockedMode=true
+        (dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore --version 8.0.0;
+        dotnet publish PhotoShare.csproj -c Release -o publish /p:RestoreLockedMode=true)
 
     # 4. Compress artefact
     - name: Compress to tarball
