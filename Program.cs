@@ -78,7 +78,6 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
