@@ -41,7 +41,7 @@ jobs:
         username:  ${{ secrets.VM_USER }}
         key:       ${{ secrets.VM_SSH_KEY }}
         script: |
-          rm -fr "${{ secrets.VM_PATH }}/photoshare.tar.gz"
+          rm -fr "${{ secrets.VM_PATH }}/*"
 
     # 6. Copy artefact to VM
     - name: Upload to VM
@@ -63,4 +63,4 @@ jobs:
         username: ${{ secrets.VM_USER }}
         key: ${{ secrets.VM_SSH_KEY }}
         script: |
-          /opt/photoshare/deploy.sh /opt/photoshare/photoshare.tar.gz
+          /home/deploy/deploy.sh /opt/photoshare/photoshare.tar.gz
