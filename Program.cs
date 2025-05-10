@@ -8,10 +8,10 @@ using PhotoShare.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration
-    .SetBasePath("/etc/photoshare")
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-    .AddEnvironmentVariables();
+// builder.Configuration
+//     .SetBasePath("/etc/photoshare")
+//     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+//     .AddEnvironmentVariables();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
