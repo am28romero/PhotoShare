@@ -8,10 +8,10 @@ using PhotoShare.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// builder.Configuration
-//     .SetBasePath("/etc/photoshare")
-//     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-//     .AddEnvironmentVariables();
+builder.Configuration
+    .SetBasePath("/etc/photoshare")
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -37,9 +37,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services
     .AddDbContext<ApplicationDbContext>(opts =>
         opts.UseMySql(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
-            ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+            connectionString,
+            ServerVersion.AutoDetect(connectionString)
         ));
+
+Console.WriteLine(connectionString);
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -61,8 +63,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
