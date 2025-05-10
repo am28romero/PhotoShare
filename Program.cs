@@ -56,6 +56,11 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 var app = builder.Build();
 
+app.UseRouting();
+
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
