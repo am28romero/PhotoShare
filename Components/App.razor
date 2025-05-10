@@ -1,5 +1,6 @@
-﻿@using PhotoShare.Components.Layout
-<Router AppAssembly="@typeof(PhotoShare.Components.Pages.Home).Assembly">
+﻿@using PhotoShare.Components.Account.Shared
+@using PhotoShare.Components.Layout
+<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
     </Found>
