@@ -53,7 +53,7 @@ jobs:
         port:      ${{ secrets.VM_SSH_PORT }}
         username: ${{ secrets.VM_USER }}
         key: ${{ secrets.VM_SSH_KEY }}
-        source: "photoshare.zip"
+        source: "publish/photoshare.zip"
         target: "${{ secrets.VM_PATH }}"
 
     # 8. Remote deploy script
