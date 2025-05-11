@@ -19,20 +19,16 @@ jobs:
         with:
           dotnet-version: 8.0.x
       
-      #    # 3. Install dependencies
-      #    - name: Install zip
-      #      run: sudo apt-get update && sudo apt-get install -y zip
-      
-      # 4. Restore + Publish
+      # 3. Restore + Publish
       - name: Publish
         run: |
           dotnet publish PhotoShare.csproj -c Release -o . /p:RestoreLockedMode=true
       
-      # 5. Compress artefact
+      # 4. Compress artefact
       - name: Compress to zip
         run: zip -r photoshare.zip .
       
-      # 6. Clean old artefact
+      # 5. Clean old artefact
       - name: Remove old directory contents on VM
         continue-on-error: true
         uses: appleboy/ssh-action@v1.0.3
@@ -42,9 +38,9 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            rm -fr "${{ secrets.VM_PATH }}/*"
+            /usr/bin/rm -fr "${{ secrets.VM_PATH }}/*"
       
-      # 7. Copy artefact to VM
+      # 6. Copy artefact to VM
       - name: Upload to VM
         uses: appleboy/scp-action@v0.1.5
         with:
@@ -55,7 +51,7 @@ jobs:
           source: "photoshare.zip"
           target: "${{ secrets.VM_PATH }}"
       
-      # 8. Remote deploy script
+      # 7. Remote deploy script
       - name: Run deploy script
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -64,4 +60,4 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            /home/deploy/deploy.sh /opt/photoshare/photoshare.zip
+            /usr/bin/sudo /usr/local/bin/deploy_photoshare.sh /opt/photoshare/photoshare.zip
