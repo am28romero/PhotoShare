@@ -12,26 +12,14 @@ jobs:
       # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      # 2. Setup .NET 8
-      - name: Setup .NET 8
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-      
-      # 3. Restore + Publish
-      - name: Publish
+
+      # 2. Compress source code
+      - name: Zip source code
         run: |
-          dotnet restore; \
-          dotnet build --configuration Release --no-restore; \
-          dotnet publish PhotoShare.csproj -r linux-x64 --self-contained true -c Release -o .
-      
-      # 4. Compress artefact
-      - name: Compress to zip
-        run: zip -r photoshare.zip .
-      
-      # 5. Clean old artefact
-      - name: Remove old directory contents on VM
+          zip -r photoshare.zip .
+
+      # 3. Remove old directory contents on VM
+      - name: Clean VM target directory
         continue-on-error: true
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -40,10 +28,10 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            /usr/bin/rm -fr "${{ secrets.VM_PATH }}/*"
-      
-      # 6. Copy artefact to VM
-      - name: Upload to VM
+            sudo rm -rf "${{ secrets.VM_PATH }}/*"
+
+      # 4. Upload source to VM
+      - name: Upload source to VM
         uses: appleboy/scp-action@v0.1.5
         with:
           host: ${{ secrets.VM_HOST }}
@@ -52,9 +40,9 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           source: "photoshare.zip"
           target: "${{ secrets.VM_PATH }}"
-      
-      # 7. Remote deploy script
-      - name: Run deploy script
+
+      # 5. SSH and run build+deploy
+      - name: Run build and deploy on VM
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}
@@ -62,4 +50,7 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            /usr/bin/sudo /usr/local/bin/deploy_photoshare.sh /opt/photoshare/photoshare.zip
+            cd "${{ secrets.VM_PATH }}"
+            unzip -o "photoshare-source.zip" -d .
+            sudo /usr/local/bin/deploy_photoshare.sh .
+            
