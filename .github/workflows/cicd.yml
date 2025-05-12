@@ -16,7 +16,7 @@ jobs:
       # 2. Compress source code
       - name: Zip source code
         run: |
-          zip -r photoshare.zip .
+          zip -r photoshare.zip . -x ".*"
 
       # 3. Remove old directory contents on VM
       - name: Clean VM target directory
