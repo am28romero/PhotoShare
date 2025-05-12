@@ -1,12 +1,19 @@
-﻿@using Microsoft.AspNetCore.Identity
+﻿@page "/Account/Logout"
+
+@using Microsoft.AspNetCore.Identity
 @using PhotoShare.Data
 @inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager Nav
 
-<button @onclick="LogoutHandler">Logout</button>
+<h3>Logging out...</h3>
 
 @code {
-    private async Task LogoutHandler()
+    protected override async Task OnInitializedAsync()
+    {
+        await PerformLogout();
+    }
+
+    private async Task PerformLogout()
     {
         await SignInManager.SignOutAsync();
         Nav.NavigateTo("/", forceLoad: true);
