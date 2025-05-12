@@ -15,6 +15,11 @@
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Components\Account\Layout\MainLayout.razor" />
+    <_ContentIncludedByDefault Remove="Components\Account\Layout\NavMenu.razor" />
+  </ItemGroup>
+
 <!--  <ItemGroup>-->
 <!--    <_ContentIncludedByDefault Remove="publish\web.config" />-->
 <!--    <_ContentIncludedByDefault Remove="publish\PhotoShare.deps.json" />-->
