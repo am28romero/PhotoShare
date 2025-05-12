@@ -22,7 +22,9 @@ jobs:
       # 3. Restore + Publish
       - name: Publish
         run: |
-          dotnet publish PhotoShare.csproj -r linux-x64 --self-contained true -c Release -o . /p:RestoreLockedMode=true
+          dotnet restore; \
+          dotnet build --configuration Release --no-restore; \
+          dotnet publish PhotoShare.csproj -r linux-x64 --self-contained true -c Release -o .
       
       # 4. Compress artefact
       - name: Compress to zip
