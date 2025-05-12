@@ -41,11 +41,31 @@ builder.Services
             ServerVersion.AutoDetect(connectionString)
         ));
 
-// Minimal Identity setup
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
+        // Password policy
+        options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
+
+        // Lockout policy
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.AllowedForNewUsers = true;
+        
+        // User policy
+        options.User.RequireUniqueEmail = true;
+        options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+
+        // Sign-in policy
+        options.SignIn.RequireConfirmedEmail = false; // true if you implement email confirmation
+        options.SignIn.RequireConfirmedPhoneNumber = false; // true if you implement phone confirmation
+        options.SignIn.RequireConfirmedAccount = false; // true if you implement account confirmation
+        
+        // Token policy
+        
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -56,7 +76,16 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 // builder.Services.AddAuthentication("Identity.Application")
 //     .AddCookie("Identity.Application");
 
-builder.Services.AddAuthorization( options => { } );
+builder.Services.AddAuthorization(options => { });
+builder.Services.AddAuthentication(options => { })
+    .AddCookie(IdentityConstants.ApplicationScheme, options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.ExpireTimeSpan = TimeSpan.FromHours(2);
+        options.SlidingExpiration = true;
+    });
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -77,9 +106,16 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    await next();
+});
 
 app.UseStaticFiles();
 app.UseRouting();
