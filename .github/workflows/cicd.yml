@@ -51,6 +51,6 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             cd "${{ secrets.VM_PATH }}"
-            unzip -o "photoshare-source.zip" -d .
+            unzip -o "photoshare.zip" -d .
             sudo /usr/local/bin/deploy_photoshare.sh .
             
