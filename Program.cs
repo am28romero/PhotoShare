@@ -52,8 +52,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddSignInManager();
 
 // Add auth cookie support
-builder.Services.AddAuthentication("Identity.Application")
-    .AddCookie("Identity.Application");
+// builder.Services.AddAuthentication("Identity.Application")
+//     .AddCookie("Identity.Application");
 
 builder.Services.AddAuthorization( options => { } );
 
