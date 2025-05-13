@@ -98,6 +98,6 @@
         await Task.Delay(100);
 
         // Force hard reload to reset Blazor circuit and auth state
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }
