@@ -34,8 +34,9 @@ builder.Services.AddHttpContextAccessor();
 //     })
 //     .AddIdentityCookies();
 
-builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
-    .AddCookie(IdentityConstants.ApplicationScheme);
+builder.Services.AddAuthentication()
+    .AddCookie(IdentityConstants.ApplicationScheme)
+    .AddCookie(IdentityConstants.ExternalScheme);
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
