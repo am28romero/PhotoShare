@@ -27,14 +27,11 @@ builder.Services.AddScoped<MediaService>();
 builder.Services.AddHttpContextAccessor();
 
 
-// builder.Services.AddAuthentication(options =>
-//     {
-//         options.DefaultScheme = IdentityConstants.ApplicationScheme;
-//         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-//     })
-//     .AddIdentityCookies();
-
-builder.Services.AddAuthentication()
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = IdentityConstants.ApplicationScheme;
+        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+    })
     .AddCookie(IdentityConstants.ApplicationScheme)
     .AddCookie(IdentityConstants.ExternalScheme);
 
