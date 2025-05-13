@@ -92,7 +92,7 @@
     private async Task Logout()
     {
         await SignInManager.SignOutAsync();
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        NavigationManager.NavigateTo("/login", forceLoad: true);
         Logger.LogInformation("User is logged out.");
     }
 }
