@@ -40,7 +40,7 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
             return TypedResults.Challenge(properties, [provider]);
         });
 
-        accountGroup.MapPost("/Logout", async (
+        accountGroup.MapGet("/Logout", async (
             HttpContext context,
             ClaimsPrincipal user,
             SignInManager<ApplicationUser> signInManager,

@@ -5,6 +5,8 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 @inject ILogger<NavMenu> Logger
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -41,16 +43,16 @@
         </div>
 
         <AuthorizeView>
-            <Authorized>
+            <Authorized Context="auth">
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @auth.User.Identity?.Name
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <EditForm Action="/Account/Logout" Method="post">
-                        <button type="submit" class="btn btn-link">Logout</button>
-                    </EditForm>
+                    <a class="nav-link text-white" href="/Account/Logout">
+                        <i class="bi bi-arrow-bar-left-nav-menu"></i> Logout
+                    </a>
                 </div>
             </Authorized>
             <NotAuthorized>
