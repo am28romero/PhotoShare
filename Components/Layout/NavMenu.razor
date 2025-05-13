@@ -1,5 +1,8 @@
-﻿@implements IDisposable
+﻿@using Microsoft.AspNetCore.Identity
+@using PhotoShare.Data
+@implements IDisposable
 
+@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 
 <div class="top-row ps-3 navbar navbar-dark">
@@ -44,13 +47,9 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <form action="Account/Logout" method="post">
-                        <AntiforgeryToken/>
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
-                        <button type="submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                        </button>
-                    </form>
+                    <button @onclick="Logout" class="nav-link">
+                        <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                    </button>
                 </div>
             </Authorized>
             <NotAuthorized>
@@ -89,4 +88,9 @@
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
+    private async Task Logout()
+    {
+        await SignInManager.SignOutAsync();
+        NavigationManager.NavigateTo("/", forceLoad: true); // Refresh after logout
+    }
 }
