@@ -48,8 +48,8 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <button @onclick="Logout" class="nav-link">
-                        <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                    <button class="nav-link" @onclick="Logout">
+                        <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Logout
                     </button>
                 </div>
             </Authorized>
@@ -93,6 +93,5 @@
     {
         await SignInManager.SignOutAsync();
         NavigationManager.NavigateTo("/login", forceLoad: true);
-        Logger.LogInformation("User is logged out.");
     }
 }
