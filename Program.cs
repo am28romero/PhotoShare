@@ -5,6 +5,7 @@ using PhotoShare.Components;
 using PhotoShare.Components.Account;
 using PhotoShare.Data;
 using PhotoShare.Services;
+using Microsoft.AspNetCore.Components.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,19 +27,25 @@ builder.Services.AddScoped<MediaService>();
 builder.Services.AddHttpContextAccessor();
 
 
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies();
+// builder.Services.AddAuthentication(options =>
+//     {
+//         options.DefaultScheme = IdentityConstants.ApplicationScheme;
+//         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+//     })
+//     .AddIdentityCookies();
+
+builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddCookie(IdentityConstants.ApplicationScheme);
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/Denied";
+    options.ExpireTimeSpan = TimeSpan.FromHours(2);
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.SameSite = SameSiteMode.Strict;
-    options.ExpireTimeSpan = TimeSpan.FromHours(2);
     options.SlidingExpiration = true;
 });
 
@@ -81,10 +88,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
-
-// Add auth cookie support
-// builder.Services.AddAuthentication("Identity.Application")
-//     .AddCookie("Identity.Application");
 
 builder.Services.AddAuthorization(options => { });
 
