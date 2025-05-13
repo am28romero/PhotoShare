@@ -42,7 +42,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/Denied";
     options.ExpireTimeSpan = TimeSpan.FromHours(2);
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None; // Set to Always in production
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.SlidingExpiration = true;
 });

@@ -48,9 +48,9 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
-                    <button class="nav-link" @onclick="Logout">
-                        <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Logout
-                    </button>
+                    <EditForm Action="/Account/Logout" Method="post">
+                        <button type="submit" class="btn btn-link">Logout</button>
+                    </EditForm>
                 </div>
             </Authorized>
             <NotAuthorized>
@@ -87,18 +87,5 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
-    }
-
-    private async Task Logout()
-    {
-        Logger.LogWarning("User requested logout...");
-        await SignInManager.SignOutAsync();
-        Logger.LogWarning("User has been signed out.");
-
-        // Small delay to ensure SignOut completes before navigating
-        await Task.Delay(100);
-
-        // Force hard reload to reset Blazor circuit and auth state
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }
