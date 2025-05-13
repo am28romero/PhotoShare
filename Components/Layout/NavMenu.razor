@@ -91,13 +91,14 @@
 
     private async Task Logout()
     {
+        Logger.LogWarning("User requested logout...");
         await SignInManager.SignOutAsync();
-        Logger.LogInformation("User has been signed out.");
+        Logger.LogWarning("User has been signed out.");
 
         // Small delay to ensure SignOut completes before navigating
         await Task.Delay(100);
 
         // Force hard reload to reset Blazor circuit and auth state
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }
