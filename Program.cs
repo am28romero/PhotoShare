@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Components.Server;
 using PhotoShare.Components;
 using PhotoShare.Components.Account;
 using PhotoShare.Data;
 using PhotoShare.Services;
-using Microsoft.AspNetCore.Components.Server;
+using PhotoShare.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,10 @@ builder.Configuration
     .SetBasePath("/etc/photoshare")
     .AddJsonFile($"appsettings.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
+
+builder.Services.Configure<MediaStorageOptions>(
+    builder.Configuration.GetSection("MediaStorage"));
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

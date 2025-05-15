@@ -1,0 +1,60 @@
+﻿@page "/myfolders"
+@using PhotoShare.Services
+@inject FolderService FolderService
+@inject NavigationManager Nav
+
+<h3>My Folders</h3>
+
+<input @bind="newFolderName" placeholder="New folder name" />
+<select @bind="parentId">
+    <option value="">[root]</option>
+    @foreach (var f in folders)
+    {
+        <option value="@f.Id">@f.Name</option>
+    }
+</select>
+<button @onclick="CreateFolder">Create Folder</button>
+
+<ul>
+    @foreach (var folder in folders.Where(f => f.ParentFolderId == null))
+    {
+        <li>
+            <a @onclick="() => GoToFolder(folder.Id)">@folder.Name</a>
+            @if (HasChildren(folder.Id))
+            {
+                <ul>
+                    @foreach (var sub in folders.Where(f => f.ParentFolderId == folder.Id))
+                    {
+                        <li><a @onclick="() => GoToFolder(sub.Id)">@sub.Name</a></li>
+                    }
+                </ul>
+            }
+        </li>
+    }
+</ul>
+
+@code {
+    List<Folder> folders = [];
+    string newFolderName = "";
+    int? parentId = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        folders = await FolderService.GetAccessibleFoldersAsync();
+    }
+
+    bool HasChildren(int id) => folders.Any(f => f.ParentFolderId == id);
+
+    async Task CreateFolder()
+    {
+        if (!string.IsNullOrWhiteSpace(newFolderName))
+        {
+            await FolderService.CreateFolderAsync(newFolderName, parentId);
+            newFolderName = "";
+            parentId = null;
+            folders = await FolderService.GetAccessibleFoldersAsync();
+        }
+    }
+
+    void GoToFolder(int id) => Nav.NavigateTo($"/folder/{id}");
+}
