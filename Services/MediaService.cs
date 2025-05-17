@@ -12,20 +12,24 @@ public class MediaService
     private readonly IWebHostEnvironment _env;
     private readonly IHttpContextAccessor _http;
     private readonly string _basePath;
+    private readonly ILogger<MediaService> _logger;
 
     public MediaService(
         ApplicationDbContext db,
         IWebHostEnvironment env,
         IHttpContextAccessor http,
-        IOptions<MediaStorageOptions> opts)
+        IOptions<MediaStorageOptions> opts,
+        ILogger<MediaService> logger)
     {
         _db = db;
         _env = env;
         _http = http;
         _basePath = opts.Value.BasePath;
+        _logger = logger;
     }
 
-    private string CurrentUserId => _http.HttpContext?.User?.FindFirst("sub")?.Value!;
+    private string? CurrentUserId =>
+        _http.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     private string BasePath => Path.Combine(_basePath);
 
     // Upload file into a folder (not root!)
@@ -87,18 +91,23 @@ public class MediaService
     // Delete media if I own the folder
     public async Task<bool> DeleteMediaAsync(int mediaId)
     {
+        _logger.LogInformation($"Deleting media {mediaId}...");
         var media = await _db.MediaItems
             .Include(m => m.Folder)
             .FirstOrDefaultAsync(m => m.Id == mediaId && m.Folder.OwnerId == CurrentUserId);
 
         if (media == null)
+        {
+            _logger.LogWarning($"Media {mediaId} was not found");
             return false;
+        }
 
         if (File.Exists(media.DiskPath))
             File.Delete(media.DiskPath);
 
         _db.MediaItems.Remove(media);
         await _db.SaveChangesAsync();
+        _logger.LogInformation($"Media {mediaId} deleted");
         return true;
     }
 }

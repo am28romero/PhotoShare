@@ -3,6 +3,9 @@
 @inject MediaService MediaService
 @inject FolderService FolderService
 @inject NavigationManager Nav
+@inject ILogger<FolderView> _logger
+@rendermode InteractiveServer
+
 
 <h3>Viewing Folder</h3>
 
@@ -17,9 +20,9 @@ else
     <ul>
         @foreach (var file in media)
         {
-            <li>
+            <li @key="file.Id">
                 @file.FileName
-                <button @onclick="() => DeleteFile(file.Id)">🗑️</button>
+                <button type="button" @onclick:stopPropagation="true" @onclick="() => DeleteFile(file)">delete</button>
             </li>
         }
     </ul>
@@ -54,9 +57,20 @@ else
         media = await MediaService.ListMediaAsync(FolderId);
     }
 
-    async Task DeleteFile(int id)
+    async Task DeleteFile(MediaItem file)
     {
+        int id = file.Id;
+        Console.WriteLine($"Debugging file with ID: {id}");
+        _logger.LogInformation($"Debugging file with ID: {id}");
         await MediaService.DeleteMediaAsync(id);
         media = await MediaService.ListMediaAsync(FolderId);
+        StateHasChanged();
+    }
+
+    async Task Debug(int FileId)
+    {
+        Console.WriteLine($"Debugging file with ID: {FileId}");
+        _logger.LogInformation($"Debugging file with ID: {FileId}");
+        await Task.CompletedTask;
     }
 }

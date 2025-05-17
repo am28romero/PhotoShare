@@ -2,6 +2,9 @@
 @using PhotoShare.Services
 @inject FolderService FolderService
 @inject NavigationManager Nav
+@inject ILogger<MyFolders> _logger
+@rendermode InteractiveServer
+
 
 <h3>My Folders</h3>
 
@@ -40,6 +43,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _logger.LogInformation("Initializing MyFolders component.");
         folders = await FolderService.GetAccessibleFoldersAsync();
     }
 
@@ -47,12 +51,17 @@
 
     async Task CreateFolder()
     {
+        _logger.LogInformation($"Creating folder '{newFolderName}' under parent ID '{parentId}'.");
         if (!string.IsNullOrWhiteSpace(newFolderName))
         {
             await FolderService.CreateFolderAsync(newFolderName, parentId);
             newFolderName = "";
             parentId = null;
             folders = await FolderService.GetAccessibleFoldersAsync();
+        }
+        else
+        {
+            _logger.LogWarning("Folder name is empty.");
         }
     }
 
