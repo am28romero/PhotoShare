@@ -3,6 +3,8 @@ using System.Reflection.Metadata;
 using PhotoShare.Models;
 using System.ComponentModel.DataAnnotations;
 
+namespace PhotoShare.Models;
+
 public class MediaItem
 {
     [StringLength(32)]
