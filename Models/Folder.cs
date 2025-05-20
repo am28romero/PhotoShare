@@ -3,12 +3,15 @@ using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 using PhotoShare.Data;
 
+namespace PhotoShare.Models;
+
 public class Folder
 {
     public int     Id             { get; set; }
     public string  OwnerId        { get; set; }
     public string  Name           { get; set; }
     public int?    ParentFolderId { get; set; }
+    public string  DiskPath           { get; set; }
     public DateTime CreatedAt     { get; set; }
 
     public ApplicationUser Owner       { get; set; }

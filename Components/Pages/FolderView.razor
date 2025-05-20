@@ -1,9 +1,11 @@
 ﻿@page "/folder/{FolderId:int}"
+@using PhotoShare.Models
 @using PhotoShare.Services
 @inject MediaService MediaService
 @inject FolderService FolderService
 @inject NavigationManager Nav
 @inject ILogger<FolderView> _logger
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 
@@ -46,20 +48,29 @@ else
     async Task HandleUpload(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        using var stream = file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024);
-        var formFile = new FormFile(stream, 0, file.Size, file.Name, file.Name)
-        {
-            Headers = new HeaderDictionary(),
-            ContentType = file.ContentType
-        };
+        _logger.LogInformation($"File upload initiated for: {file.Name}");
 
-        await MediaService.UploadFileAsync(formFile, FolderId);
+        try 
+        {
+            _logger.LogInformation($"Starting file upload for: {file.Name}");
+            await MediaService.UploadFileAsync(file, FolderId);
+            _logger.LogInformation($"File upload completed for: {file.Name}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error uploading file: {file.Name}");
+            await JSRuntime.InvokeVoidAsync("alert", "File upload failed.");
+            throw;
+        }
+
         media = await MediaService.ListMediaAsync(FolderId);
+        StateHasChanged();
+        _logger.LogInformation($"Media list updated after upload for folder ID: {FolderId}");
     }
 
     async Task DeleteFile(MediaItem file)
     {
-        int id = file.Id;
+        string id = file.Id;
         Console.WriteLine($"Debugging file with ID: {id}");
         _logger.LogInformation($"Debugging file with ID: {id}");
         await MediaService.DeleteMediaAsync(id);
