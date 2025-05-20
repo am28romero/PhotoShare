@@ -12,6 +12,8 @@ jobs:
       # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
 
       # 2. Compress source code
       - name: Zip source code

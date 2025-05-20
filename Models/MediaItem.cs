@@ -1,7 +1,4 @@
-﻿using System.Data.SqlTypes;
-using System.Reflection.Metadata;
-using PhotoShare.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace PhotoShare.Models;
 

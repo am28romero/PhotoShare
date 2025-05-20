@@ -1,7 +1,4 @@
-﻿using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations.Schema;
-using PhotoShare.Data;
+﻿using PhotoShare.Data;
 
 namespace PhotoShare.Models;
 
