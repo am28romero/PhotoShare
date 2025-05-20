@@ -17,15 +17,4 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="8.0.15" />
   </ItemGroup>
 
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="Components\Account\Layout\MainLayout.razor" />
-    <_ContentIncludedByDefault Remove="Components\Account\Layout\NavMenu.razor" />
-  </ItemGroup>
-
-<!--  <ItemGroup>-->
-<!--    <_ContentIncludedByDefault Remove="publish\web.config" />-->
-<!--    <_ContentIncludedByDefault Remove="publish\PhotoShare.deps.json" />-->
-<!--    <_ContentIncludedByDefault Remove="publish\PhotoShare.runtimeconfig.json" />-->
-<!--  </ItemGroup>-->
-
 </Project>

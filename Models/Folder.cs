@@ -7,6 +7,11 @@ namespace PhotoShare.Models;
 
 public class Folder
 {
+    public Folder()
+    {
+        ChildFolders = new HashSet<Folder>();
+        MediaItems   = new HashSet<MediaItem>();
+    }
     public int     Id             { get; set; }
     public string  OwnerId        { get; set; }
     public string  Name           { get; set; }
