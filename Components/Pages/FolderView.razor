@@ -70,7 +70,7 @@ else
 
     async Task DeleteFile(MediaItem file)
     {
-        string id = file.Id;
+        int id = file.Id;
         Console.WriteLine($"Debugging file with ID: {id}");
         _logger.LogInformation($"Debugging file with ID: {id}");
         await MediaService.DeleteMediaAsync(id);

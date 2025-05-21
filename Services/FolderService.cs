@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using PhotoShare.Data;
 using PhotoShare.Options;
 using PhotoShare.Models;
+using PhotoShare.Helpers;
 
 namespace PhotoShare.Services;
 
@@ -31,6 +32,12 @@ public class FolderService
 
     private string? CurrentUserId =>
         _http.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+    private void SetDefaultDirectoryPermissions(string path)
+    {
+        FilePermissionHelper.SetDirectoryOwnership(path, user:"photoshare", group:"photoshare");
+        FilePermissionHelper.SetDirectoryPermissions(path, mode:"700");
+    }
 
 
     public async Task<List<Folder>> GetAccessibleFoldersAsync()
@@ -90,6 +97,7 @@ public class FolderService
             try 
             {
                 Directory.CreateDirectory(absPath);
+                SetDefaultDirectoryPermissions(absPath);
             }
             catch (Exception ex)
             {

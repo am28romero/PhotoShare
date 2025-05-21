@@ -22,7 +22,7 @@ jobs:
 
       # 3. Remove old directory contents on VM
       - name: Clean VM target directory
-        continue-on-error: true
+#        continue-on-error: true # bad practice
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}

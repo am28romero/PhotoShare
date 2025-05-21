@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Text;
 using System.Security.Cryptography;
+using PhotoShare.Helpers;
 using PhotoShare.Data;
 using PhotoShare.Options;
 using PhotoShare.Models;
@@ -32,8 +33,13 @@ public class MediaService
         _logger = logger;
     }
 
+    private static void SetDefaultFilePermissions(string path)
+    {
+        FilePermissionHelper.SetFileOwnership(path, user:"photoshare", group:"photoshare");
+        FilePermissionHelper.SetFilePermissions(path, mode:"600");
+    }
     private string? CurrentUserId =>
-        _http.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        _http.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     private string BasePath => Path.Combine(_basePath);
 
     // Upload file into a folder (not root!)
@@ -48,7 +54,7 @@ public class MediaService
         // Create physical folder path
         var folderPath = await _db.Folders
             .Where(f => f.Id == folderId)
-            .Select(f => Path.Combine(BasePath, f.DiskPath))
+            .Select(f => f.DiskPath)
             .FirstOrDefaultAsync();
         if (folderPath == null)
             throw new DirectoryNotFoundException($"Folder {folderId} not found");
@@ -57,23 +63,38 @@ public class MediaService
         var hashInput = $"{folderId}{file.Name}";
         using var md5 = MD5.Create();
         var hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(hashInput));
-        var id = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-        var storedFileName = $"{DateTime.UtcNow:yyyyMMdd}_{id}{ext}";
-        var fullPath = Path.Combine(folderPath, storedFileName);
+        var hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+        var storedFileName = $"{DateTime.UtcNow:yyyyMMdd}_{hash}{ext}";
+        var relPath = Path.Combine(folderPath, storedFileName);
+        var absPath = Path.Combine(BasePath, relPath);
 
-        await using var fs = new FileStream(fullPath, FileMode.Create);
-        await using var stream = file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024); // 100MB default
-        await stream.CopyToAsync(fs);
+        
+        try
+        {
+            await using var fs = new FileStream(absPath, FileMode.Create);
+            await using var stream = file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024); // 100MB default
+            await stream.CopyToAsync(fs);
+            SetDefaultFilePermissions(absPath);
+        }
+        catch
+        {
+            if (File.Exists(absPath))
+            {
+                File.Delete(absPath);
+            }
+            throw;
+        }
+
 
         var item = new MediaItem
         {
-            Id = id,
+            Hash = hash,
             FolderId = folder.Id,
             FileName = file.Name,
             FileSize = file.Size,
             MimeType = file.ContentType,
-            DiskPath = fullPath,
-            OwnerId = CurrentUserId,
+            DiskPath = relPath,
+            OwnerId = CurrentUserId!,
             CreatedAt = DateTime.UtcNow,
             LastModified = DateTime.UtcNow
         };
@@ -94,7 +115,7 @@ public class MediaService
     }
 
     // Get media by ID with access check
-    public async Task<MediaItem?> GetMediaAsync(string mediaId)
+    public async Task<MediaItem?> GetMediaAsync(int mediaId)
     {
         return await _db.MediaItems
             .Include(m => m.Folder)
@@ -102,7 +123,7 @@ public class MediaService
     }
 
     // Delete media if I own the folder
-    public async Task<bool> DeleteMediaAsync(string mediaId)
+    public async Task<bool> DeleteMediaAsync(int mediaId)
     {
         _logger.LogInformation($"Deleting media {mediaId}...");
         var media = await _db.MediaItems
