@@ -12,26 +12,28 @@ public class FolderService
     private readonly ApplicationDbContext _db;
     private readonly IHttpContextAccessor _http;
     private readonly ILogger<FolderService> _logger;
-    private readonly MediaStorageOptions _mediaStorageOptions;
     private readonly string _mediaBasePath;
+    private readonly AccessService _accessService;
 
     public FolderService(
         ApplicationDbContext db, IHttpContextAccessor http,
-        ILogger<FolderService> logger, IOptions<MediaStorageOptions> mediaStorageOptions)
+        ILogger<FolderService> logger, IOptions<MediaStorageOptions> mediaStorageOptions,
+        AccessService accessService)
     {
         _logger = logger;
         _db = db;
         _http = http;
-        _mediaStorageOptions = mediaStorageOptions.Value;
-        if (_mediaStorageOptions.BasePath == null)
+        var mediaStorageOpts = mediaStorageOptions.Value;
+        if (mediaStorageOpts.BasePath == null)
         {
             throw new InvalidOperationException("Media storage base path is not configured.");
         }
-        _mediaBasePath = Path.Combine(_mediaStorageOptions.BasePath, "media");
+        _mediaBasePath = Path.Combine(mediaStorageOpts.BasePath);
+        _accessService = accessService;
     }
 
     private string? CurrentUserId =>
-        _http.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        _http.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
     private void SetDefaultDirectoryPermissions(string path)
     {
@@ -52,86 +54,137 @@ public class FolderService
 
     public async Task<Folder?> GetFolderAsync(int folderId)
     {
-        return await _db.Folders
-            .FirstOrDefaultAsync(f => f.Id == folderId && f.OwnerId == CurrentUserId);
+        var folder = await _db.Folders.FirstOrDefaultAsync(f => f.Id == folderId);
+        if (folder == null || !await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, folder.Id, PermissionEnum.View))
+            return null;
+        return folder;
     }
 
     // Create folder (optionally nested)
     public async Task<Folder?> CreateFolderAsync(string name, int? parentFolderId = null)
     {
-        string relPath;
-        // Recursively add subfolders to ensure the full path exists
+        // Verify parent exists and access is allowed
+        List<int> folderChain = [];
         if (parentFolderId.HasValue)
         {
-            var parentFolders = new Stack<string>();
-            var currentParentId = parentFolderId;
-            while (currentParentId.HasValue)
+            var currentId = parentFolderId;
+            while (currentId.HasValue)
             {
-                var parentFolder = await _db.Folders.FirstOrDefaultAsync(f => f.Id == currentParentId.Value);
-                if (parentFolder == null) break;
-                parentFolders.Push($"f_{parentFolder.Name}");
-                currentParentId = parentFolder.ParentFolderId;
+                var parent = await _db.Folders.FirstOrDefaultAsync(f => f.Id == currentId);
+                if (parent == null)
+                    return null;
+
+                if (!await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, parent.Id, PermissionEnum.Modify))
+                    return null;
+
+                folderChain.Insert(0, parent.Id); // prepend for root-to-leaf
+                currentId = parent.ParentFolderId;
             }
-            relPath = Path.Combine($"u_{CurrentUserId}" , Path.Combine(parentFolders.ToArray()), $"f_{name}");
-        }
-        else
-        {
-            relPath = Path.Combine($"u_{CurrentUserId}", $"f_{name}");
         }
 
+        // Step 1: Create DB row without DiskPath
         var folder = new Folder
         {
             Name = name,
-            OwnerId = CurrentUserId,
+            OwnerId = CurrentUserId!,
             ParentFolderId = parentFolderId,
-            DiskPath = relPath,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            DiskPath = "" // will be set later
         };
 
         _db.Folders.Add(folder);
+        await _db.SaveChangesAsync(); // generates folder.Id
 
-        // Create folder on disk
+        // Step 2: Build relative path with full folder chain
+        folder = await _db.Folders
+            .Include(f => f.ParentFolder)
+            .FirstOrDefaultAsync(f => f.Id == folder.Id);
+        
+        folderChain.Add(folder.Id); // include this folder
+        var relPath = Path.Combine(
+            $"u_{folder.OwnerId}",
+            Path.Combine(folderChain.Select(id => $"f_{id}").ToArray())
+        );
+
+        folder.DiskPath = relPath;
+
+        // Step 3: Create directory on disk
         var absPath = Path.Combine(_mediaBasePath, relPath);
         if (!Directory.Exists(absPath))
         {
-            try 
+            try
             {
                 Directory.CreateDirectory(absPath);
-                SetDefaultDirectoryPermissions(absPath);
+                // Optionally set permissions
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to create directory for folder `{FolderName}`", name);
+                _logger.LogError(ex, "Failed to create folder path `{FolderPath}`", absPath);
+                // Cleanup: remove DB entry if directory creation fails
+                _db.Folders.Remove(folder);
+                await _db.SaveChangesAsync();
                 return null;
             }
         }
 
+        // Step 4: Save updated DiskPath
         await _db.SaveChangesAsync();
         return folder;
     }
 
+
     public async Task<bool> RenameFolderAsync(int folderId, string newName)
     {
-        var folder = await GetFolderAsync(folderId);
-        if (folder == null) return false;
+        var folder = await _db.Folders.FirstOrDefaultAsync(f => f.Id == folderId);
+        if (folder == null || !await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, folder.Id, PermissionEnum.Modify))
+            return false;
 
         folder.Name = newName;
         await _db.SaveChangesAsync();
         return true;
     }
 
-    // Delete folder and child media
-    public async Task<bool> DeleteFolderAsync(int folderId)
+    public async Task<bool> DeleteFolderAsync(int folderId, bool skipPermissionCheck = false)
     {
         var folder = await _db.Folders
+            .Include(f => f.ChildFolders)
             .Include(f => f.MediaItems)
-            .FirstOrDefaultAsync(f => f.Id == folderId && f.OwnerId == CurrentUserId);
+            .FirstOrDefaultAsync(f => f.Id == folderId);
 
-        if (folder == null) return false;
+        if (folder == null)
+            return false;
 
-        // Remove media items first
+        if (!skipPermissionCheck &&
+            !await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, folder.Id, PermissionEnum.Modify))
+            return false;
+
+        // Recursively delete subfolders
+        foreach (var child in folder.ChildFolders)
+        {
+            await DeleteFolderAsync(child.Id, skipPermissionCheck: true); // already verified access
+        }
+
+        // Delete media items
         _db.MediaItems.RemoveRange(folder.MediaItems);
+
+        // Delete this folder
         _db.Folders.Remove(folder);
+        
+        // Delete on-disk folder
+        var folderPath = Path.Combine(_mediaBasePath, folder.DiskPath);
+        if (Directory.Exists(folderPath))
+        {
+            try
+            {
+                Directory.Delete(folderPath, recursive: true);
+                _logger.LogInformation("Deleted folder `{FolderPath}`", folderPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete folder `{FolderPath}`", folderPath);
+            }
+        }
+        
         await _db.SaveChangesAsync();
         return true;
     }

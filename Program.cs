@@ -29,6 +29,7 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<FolderService>();
 builder.Services.AddScoped<MediaService>();
+builder.Services.AddScoped<AccessService>();
 builder.Services.AddHttpContextAccessor();
 
 

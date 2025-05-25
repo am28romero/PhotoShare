@@ -18,19 +18,19 @@ public class MediaService
     private readonly IHttpContextAccessor _http;
     private readonly string _basePath;
     private readonly ILogger<MediaService> _logger;
+    private readonly AccessService _accessService;
 
     public MediaService(
-        ApplicationDbContext db,
-        IWebHostEnvironment env,
-        IHttpContextAccessor http,
-        IOptions<MediaStorageOptions> opts,
-        ILogger<MediaService> logger)
+        ApplicationDbContext db, IWebHostEnvironment env,
+        IHttpContextAccessor http, IOptions<MediaStorageOptions> opts,
+        ILogger<MediaService> logger, AccessService accessService)
     {
         _db = db;
         _env = env;
         _http = http;
         _basePath = opts.Value.BasePath;
         _logger = logger;
+        _accessService = accessService;
     }
 
     private static void SetDefaultFilePermissions(string path)
@@ -74,7 +74,7 @@ public class MediaService
             await using var fs = new FileStream(absPath, FileMode.Create);
             await using var stream = file.OpenReadStream(maxAllowedSize: 100 * 1024 * 1024); // 100MB default
             await stream.CopyToAsync(fs);
-            SetDefaultFilePermissions(absPath);
+            // SetDefaultFilePermissions(absPath);
         }
         catch
         {

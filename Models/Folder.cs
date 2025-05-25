@@ -5,21 +5,18 @@ namespace PhotoShare.Models;
 
 public class Folder
 {
-    public Folder()
-    {
-        ChildFolders = new HashSet<Folder>();
-        MediaItems   = new HashSet<MediaItem>();
-    }
     public int     Id             { get; set; }
-    [StringLength(32)]
-    public string  OwnerId        { get; set; } = default!;
-    [StringLength(255)]
-    public string  Name           { get; set; }= default!;
+    [Required] [StringLength(32)]
+    public string  OwnerId        { get; set; } = null!;
+    [Required] [StringLength(255)]
+    public string  Name           { get; set; } = null!;
     public int?    ParentFolderId { get; set; }
-    [StringLength(1024)]
-    public string  DiskPath           { get; set; } = default!;
+    [Required] [StringLength(1024)]
+    public string  DiskPath           { get; set; } = null!;
+    [Required] 
     public DateTime CreatedAt     { get; set; }
-
+    
+#pragma warning disable CS8618
     public ApplicationUser Owner       { get; set; }
     public Folder          ParentFolder{ get; set; }
     public ICollection<Folder> ChildFolders { get; set; }

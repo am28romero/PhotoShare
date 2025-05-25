@@ -20,19 +20,11 @@
 <button @onclick="CreateFolder">Create Folder</button>
 
 <ul>
-    @foreach (var folder in folders.Where(f => f.ParentFolderId == null))
+    @foreach (var f in folders.Where(f => f.ParentFolderId == null))
     {
         <li>
-            <a @onclick="() => GoToFolder(folder.Id)">@folder.Name</a>
-            @if (HasChildren(folder.Id))
-            {
-                <ul>
-                    @foreach (var sub in folders.Where(f => f.ParentFolderId == folder.Id))
-                    {
-                        <li><a @onclick="() => GoToFolder(sub.Id)">@sub.Name</a></li>
-                    }
-                </ul>
-            }
+            <a @onclick="() => GoToFolder(f.Id)">@f.Name</a>
+            <button type="button" @onclick:stopPropagation="true" @onclick="() => DeleteFolder(f.Id)">delete</button>
         </li>
     }
 </ul>
@@ -64,6 +56,13 @@
         {
             _logger.LogWarning("Folder name is empty.");
         }
+    }
+    
+    async Task DeleteFolder(int id)
+    {
+        _logger.LogInformation($"Deleting folder with ID: {id}");
+        await FolderService.DeleteFolderAsync(id);
+        folders = await FolderService.GetAccessibleFoldersAsync();
     }
 
     void GoToFolder(int id) => Nav.NavigateTo($"/folder/{id}");
