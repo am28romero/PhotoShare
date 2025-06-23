@@ -1,30 +1,58 @@
 ﻿@page "/folder/{FolderId:int}"
+@using Microsoft.EntityFrameworkCore
+@using PhotoShare.Data
 @using PhotoShare.Models
 @using PhotoShare.Services
+@using PhotoShare.Components.Shared
 @inject MediaService MediaService
 @inject FolderService FolderService
 @inject NavigationManager Nav
 @inject ILogger<FolderView> _logger
 @inject IJSRuntime JSRuntime
+@inject ApplicationDbContext _db
+@inject AccessService _accessService
+@inject IHttpContextAccessor _http
 @rendermode InteractiveServer
 
+@attribute [Authorize]
 
 <h3>Viewing Folder</h3>
 
 @if (folder is null)
 {
-    <p>Folder not found or access denied.</p>
+    <p>Folder not found.</p>
 }
 else
 {
     <h4>@folder.Name</h4>
-    <InputFile OnChange="HandleUpload" />
+    @if (CurrentUserCanShare)
+    {
+        <button type="button" @onclick:stopPropagation="true" 
+                @onclick="() => ShareFolder(FolderId)"
+                style="margin-right: 1rem;">Share Folder</button>
+        <ShareFolderDialog
+            Visible="@sharePopupVisible"
+            FolderId="@sharingFolderId"
+            FolderName="@sharingFolderName"
+            OnClose="HideSharePopup"
+            OnShare="HandleShare" />
+    }
+    
+    <label class="file-upload">
+        Upload File
+        <InputFile OnChange="HandleUpload" style="display: none" multiple />
+    </label>
     <ul>
-        @foreach (var file in media)
+        @foreach (var mediaItem in media)
         {
-            <li @key="file.Id">
-                @file.FileName
-                <button type="button" @onclick:stopPropagation="true" @onclick="() => DeleteFile(file)">delete</button>
+            <li @key="mediaItem.Id">
+                @mediaItem.FileName
+                <button type="button" title="Download" class="download-btn"
+                        @onclick:stopPropagation="true"
+                        @onclick="() => HandleDownload(mediaItem)">
+                    <i class="bi bi-download"></i>
+                </button>
+                <button type="button" @onclick:stopPropagation="true" @onclick="() => DeleteMediaItem(mediaItem)">delete</button>
             </li>
         }
     </ul>
@@ -32,35 +60,72 @@ else
 
 @code {
     [Parameter] public int FolderId { get; set; }
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private string? CurrentUserId =>
+        _http.HttpContext?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+    private bool CurrentUserCanShare = false;
+    private int CurrentUserFolderPermissions = 0;
 
     Folder? folder;
     List<MediaItem> media = [];
+    bool sharePopupVisible = false;
+    int sharingFolderId = 0;
+    string sharingFolderName = "";
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateTask;
+        var user = authState.User;
+
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            // Redirect to login with returnUrl
+            var returnUrl = Nav.ToBaseRelativePath(Nav.Uri);
+            Nav.NavigateTo($"account/login?returnUrl={Uri.EscapeDataString("/" + returnUrl)}", forceLoad: true);
+            return;
+        }
+
         folder = await FolderService.GetFolderAsync(FolderId);
         if (folder != null)
         {
             media = await MediaService.ListMediaAsync(folder.Id);
         }
+
+        CurrentUserCanShare = await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, FolderId, PermissionEnum.Share);
+        _logger.LogDebug($"User ({CurrentUserId}) CanShare: {CurrentUserCanShare} for FolderId: {FolderId}");
+        StateHasChanged();
+        _logger.LogInformation("FolderView initialized for folder ID: {FolderId}", FolderId);
     }
 
     async Task HandleUpload(InputFileChangeEventArgs e)
     {
-        var file = e.File;
-        _logger.LogInformation($"File upload initiated for: {file.Name}");
-
-        try 
+        var files = e.GetMultipleFiles();
+        
+        // Quota check
+        if (files.Count > 10)
         {
-            _logger.LogInformation($"Starting file upload for: {file.Name}");
-            await MediaService.UploadFileAsync(file, FolderId);
-            _logger.LogInformation($"File upload completed for: {file.Name}");
+            _logger.LogWarning("More than 10 files selected for upload. Limiting to 10.");
+            await JSRuntime.InvokeVoidAsync("alert", "You can only upload up to 10 files at a time.");
+            return;
         }
-        catch (Exception ex)
+        
+        foreach (var file in files)
         {
-            _logger.LogError(ex, $"Error uploading file: {file.Name}");
-            await JSRuntime.InvokeVoidAsync("alert", "File upload failed.");
-            throw;
+            _logger.LogInformation($"File upload initiated for: {file.Name} ({file.Size} bytes)");
+
+            try
+            {
+                await MediaService.UploadFileAsync(file, FolderId);
+                _logger.LogInformation($"File upload completed for: {file.Name}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error uploading file: {file.Name}");
+                await JSRuntime.InvokeVoidAsync("alert", "File upload failed.");
+                throw;
+            }
         }
 
         media = await MediaService.ListMediaAsync(FolderId);
@@ -68,20 +133,68 @@ else
         _logger.LogInformation($"Media list updated after upload for folder ID: {FolderId}");
     }
 
-    async Task DeleteFile(MediaItem file)
+    async Task DeleteMediaItem(MediaItem file)
     {
         int id = file.Id;
-        Console.WriteLine($"Debugging file with ID: {id}");
-        _logger.LogInformation($"Debugging file with ID: {id}");
-        await MediaService.DeleteMediaAsync(id);
+        try 
+        {
+            await MediaService.DeleteMediaAsync(id);
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Failed to delete media item {file.FileName}.");
+        }
         media = await MediaService.ListMediaAsync(FolderId);
         StateHasChanged();
     }
 
-    async Task Debug(int FileId)
+    void ShareFolder(int id)
     {
-        Console.WriteLine($"Debugging file with ID: {FileId}");
-        _logger.LogInformation($"Debugging file with ID: {FileId}");
-        await Task.CompletedTask;
+        _logger.LogInformation($"Showing Share Popup for folder {id}");
+        var folder = _db.Folders.FirstOrDefaultAsync(f => f.Id == id).Result;
+        if (folder == null)
+        {
+            _logger.LogWarning($"Folder with ID {id} not found.");
+            return;
+        }
+
+        sharingFolderId = folder.Id;
+        sharingFolderName = folder.Name;
+        sharePopupVisible = true;
+        StateHasChanged();
+    }
+    
+    Task HideSharePopup()
+    {
+        sharePopupVisible = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    async Task HandleShare((string userId, PermissionEnum permission) data)
+    {
+        var ok = await FolderService.ShareFolderAsync(sharingFolderId, data.userId, data.permission);
+        if (!ok)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to share folder.");
+        }
+        else
+        {
+            _logger.LogInformation($"Folder {sharingFolderId} shared with {data.userId} ({data.permission})");
+        }
+    }
+    
+    async Task HandleDownload(MediaItem mediaItem)
+    {
+        try
+        {
+            
+            _logger.LogInformation($"Download initiated for media item: {mediaItem.FileName}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error downloading media item: {mediaItem.FileName}");
+            await JSRuntime.InvokeVoidAsync("alert", "File download failed.");
+        }
     }
 }

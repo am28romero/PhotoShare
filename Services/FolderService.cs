@@ -46,10 +46,26 @@ public class FolderService
     {
         _logger.LogInformation($"Getting accessible folders for user id: `{CurrentUserId}`");
         
-        return await _db.Folders
+        var owned = await _db.Folders
             .Where(f => f.OwnerId == CurrentUserId)
-            .OrderBy(f => f.Name)
             .ToListAsync();
+
+        var others = await _db.Folders
+            .Where(f => f.OwnerId != CurrentUserId)
+            .ToListAsync();
+
+        var shared = new List<Folder>();
+        foreach (var folder in others)
+        {
+            if (await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, folder.Id, PermissionEnum.View))
+            {
+                shared.Add(folder);
+            }
+        }
+
+        return owned.Concat(shared)
+            .OrderBy(f => f.Name)
+            .ToList();
     }
 
     public async Task<Folder?> GetFolderAsync(int folderId)
@@ -155,7 +171,7 @@ public class FolderService
             return false;
 
         if (!skipPermissionCheck &&
-            !await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, folder.Id, PermissionEnum.Modify))
+            !await _accessService.HasPermissionAsync(CurrentUserId!, TargetType.Folder, folder.Id, PermissionEnum.Modify | PermissionEnum.Append))
             return false;
 
         // Recursively delete subfolders
@@ -187,5 +203,27 @@ public class FolderService
         
         await _db.SaveChangesAsync();
         return true;
+    }
+    
+    public async Task<bool> ShareFolderAsync(int folderId, string subjectUserId, PermissionEnum permission)
+    {
+        var folder = await _db.Folders.FirstOrDefaultAsync(f => f.Id == folderId);
+        if (folder == null || folder.OwnerId != CurrentUserId)
+        {
+            _logger.LogWarning($"Folder {folderId} not found or access denied for user {CurrentUserId}");
+            return false;
+        }
+
+        try
+        {
+            await _accessService.SetAclAsync(CurrentUserId, subjectUserId, TargetType.Folder, folderId, permission);
+            _logger.LogInformation($"Shared folder {folderId} with user {subjectUserId} with permission {permission}");
+            return true;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to share folder {FolderId} with user {UserId}", folderId, subjectUserId);
+            return false;
+        }
     }
 }

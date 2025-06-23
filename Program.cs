@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Server;
+using Serilog;
 using PhotoShare.Components;
 using PhotoShare.Components.Account;
 using PhotoShare.Data;
@@ -19,6 +20,17 @@ builder.Services.Configure<MediaStorageOptions>(
     builder.Configuration.GetSection("MediaStorage"));
 
 
+// Configure Serilog for structured logging
+var seqUrl = builder.Configuration["Logging:SeqUrl"]!;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .Enrich.FromLogContext()
+    .ReadFrom.Configuration(builder.Configuration)
+    .WriteTo.Seq(seqUrl)
+    .WriteTo.Console()
+    .CreateLogger();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -31,6 +43,8 @@ builder.Services.AddScoped<FolderService>();
 builder.Services.AddScoped<MediaService>();
 builder.Services.AddScoped<AccessService>();
 builder.Services.AddHttpContextAccessor();
+builder.Host.UseSerilog();
+
 
 
 builder.Services.AddAuthentication(options =>

@@ -1,0 +1,120 @@
+@using Microsoft.EntityFrameworkCore
+@using PhotoShare.Data
+@using PhotoShare.Models
+@inject ApplicationDbContext _db
+@inject ILogger<ShareFolderDialog> _logger
+@namespace PhotoShare.Components.Shared
+
+@if (Visible)
+{
+    <div class="modal-overlay">
+        <div class="modal">
+            <h4>Share: @FolderName</h4>
+
+            <div class="tag-input-wrapper" @onclick="FocusInput">
+                @foreach (var u in SelectedUsers)
+                {
+                    <span class="tag">
+                    @u
+                        <button type="button" class="remove" @onclick="() => RemoveUser(u)">×</button>
+                    </span>
+                }
+
+                <input @ref="InputRef" @bind="CurrentInput" @bind:event="oninput"
+                       @onkeydown="HandleKeyDown" placeholder="Enter usernames..." />
+            </div>
+
+            <select @bind="SelectedPermission">
+                <option value="1">View</option>
+                <option value="3">View + Append</option>
+                <option value="7">View + Append + Modify</option>
+            </select>
+            <label><input type="checkbox" @bind="AllowShare" /> Allow sharing</label>
+
+            <div class="buttons">
+                <button @onclick="Share">Share</button>
+                <button @onclick="Close">Cancel</button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Status))
+            {
+                <p>@Status</p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string FolderName { get; set; } = "";
+    [Parameter] public int FolderId { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<(string userId, PermissionEnum permission)> OnShare { get; set; }
+
+    string TargetUsername = "";
+    int SelectedPermission = 1;
+    bool AllowShare = false;
+    string? Status;
+    ElementReference InputRef;
+    string CurrentInput = "";
+    List<string> SelectedUsers = new();
+
+    async Task Share()
+    {
+        foreach (var username in SelectedUsers)
+        {
+            var user = await _db.Users
+                .FirstOrDefaultAsync(u => u.UserName == username || u.Email == username);
+
+            if (user == null)
+            {
+                Status = $"User not found: {username}";
+                return;
+            }
+
+            var perm = (PermissionEnum)SelectedPermission | (AllowShare ? PermissionEnum.Share : 0);
+            await OnShare.InvokeAsync((user.Id, perm));
+        }
+
+        await Close();
+    }
+
+
+    async Task Close()
+    {
+        TargetUsername = "";
+        SelectedPermission = 1;
+        AllowShare = false;
+        Status = null;
+        await OnClose.InvokeAsync();
+    }
+    
+    protected override void OnParametersSet()
+    {
+        _logger.LogDebug($"ShareFolderDialog visibility updated: {Visible}");
+        StateHasChanged();
+    }
+    
+    
+    void RemoveUser(string u) => SelectedUsers.Remove(u);
+
+    void FocusInput() => InputRef.FocusAsync();
+
+    void TryAddUser()
+    {
+        var trimmed = CurrentInput.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmed) && !SelectedUsers.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+        {
+            SelectedUsers.Add(trimmed);
+        }
+        CurrentInput = "";
+    }
+
+    void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == " " || e.Key == "," || e.Key == "Enter")
+        {
+            TryAddUser();
+        }
+    }
+}

@@ -19,7 +19,7 @@ protected override void OnModelCreating(ModelBuilder builder)
     base.OnModelCreating(builder);
 
     builder.Entity<AclEntry>()
-        .Property(e => e.PermissionEnum)
+        .Property(e => e.PermissionFlags)
         .HasConversion<int>();
 
     builder.Entity<AclEntry>()

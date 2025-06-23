@@ -5,9 +5,12 @@ using PhotoShare.Data;
 [Flags]
 public enum PermissionEnum
 {
+    None   = 0,
     View   = 1,
     Append = 2,
-    Modify = 4
+    Modify = 4,
+    Share  = 8,
+    FullControl = View | Append | Modify | Share
 }
 
 public class AclEntry
@@ -23,9 +26,8 @@ public class AclEntry
 
     [Required]
     public string SubjectId { get; set; } = null!; // FK to AspNetUsers
-
     [Required]
-    public PermissionEnum PermissionEnum { get; set; }
+    public PermissionEnum PermissionFlags { get; set; }
 
     [Required]
     public string GrantedById { get; set; } = null!; // FK to AspNetUsers

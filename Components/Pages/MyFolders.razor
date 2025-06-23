@@ -1,10 +1,14 @@
 ﻿@page "/myfolders"
 @using PhotoShare.Models
 @using PhotoShare.Services
+@using PhotoShare.Components.Shared
 @inject FolderService FolderService
 @inject NavigationManager Nav
 @inject ILogger<MyFolders> _logger
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
+
+@attribute [Authorize]
 
 
 <h3>My Folders</h3>
@@ -22,17 +26,31 @@
 <ul>
     @foreach (var f in folders.Where(f => f.ParentFolderId == null))
     {
-        <li>
+        <li @key="f.Id">
             <a @onclick="() => GoToFolder(f.Id)">@f.Name</a>
+            <button type="button" @onclick:stopPropagation="true" @onclick="() => ShareFolder(f.Id)">share</button>
             <button type="button" @onclick:stopPropagation="true" @onclick="() => DeleteFolder(f.Id)">delete</button>
         </li>
     }
 </ul>
+<ShareFolderDialog
+    Visible="@sharePopupVisible"
+    FolderId="@sharingFolderId"
+    FolderName="@sharingFolderName"
+    OnClose="HideSharePopup"
+    OnShare="HandleShare" />
 
 @code {
     List<Folder> folders = [];
     string newFolderName = "";
     int? parentId = null;
+    string deleteConfirmationMessage(string folderName) =>
+        $"Are you sure you want to delete folder '{folderName}' and its contents? This action cannot be undone.";
+    void GoToFolder(int id) => Nav.NavigateTo($"/folder/{id}");
+    bool sharePopupVisible = false;
+    int sharingFolderId = 0;
+    string sharingFolderName = "";
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,10 +78,55 @@
     
     async Task DeleteFolder(int id)
     {
+        var folder = folders.FirstOrDefault(f => f.Id == id);
+        if (folder == null)
+        {
+            _logger.LogWarning($"Folder with ID {id} not found.");
+            return;
+        }
+        // Confirm deletion
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", deleteConfirmationMessage(folder.Name)))
+        {
+            return;
+        }
         _logger.LogInformation($"Deleting folder with ID: {id}");
         await FolderService.DeleteFolderAsync(id);
         folders = await FolderService.GetAccessibleFoldersAsync();
     }
+    
+    void ShareFolder(int id)
+    {
+        _logger.LogInformation($"Showing Share Popup for folder {id}");
+        var folder = folders.FirstOrDefault(f => f.Id == id);
+        if (folder == null)
+        {
+            _logger.LogWarning($"Folder with ID {id} not found.");
+            return;
+        }
 
-    void GoToFolder(int id) => Nav.NavigateTo($"/folder/{id}");
+        sharingFolderId = folder.Id;
+        sharingFolderName = folder.Name;
+        sharePopupVisible = true;
+        StateHasChanged();
+    }
+
+    Task HideSharePopup()
+    {
+        sharePopupVisible = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    async Task HandleShare((string userId, PermissionEnum permission) data)
+    {
+        var ok = await FolderService.ShareFolderAsync(sharingFolderId, data.userId, data.permission);
+        if (!ok)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to share folder.");
+        }
+        else
+        {
+            _logger.LogInformation($"Folder {sharingFolderId} shared with {data.userId} ({data.permission})");
+        }
+    }
 }
